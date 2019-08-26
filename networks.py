@@ -102,7 +102,6 @@ class ResnetGenerator(nn.Module):
             x_ = self.FC(x.view(x.shape[0], -1))
         gamma, beta = self.gamma(x_), self.beta(x_)
 
-
         for i in range(self.n_blocks):
             x = getattr(self, 'UpBlock1_' + str(i+1))(x, gamma, beta)
         out = self.UpBlock2(x)
@@ -162,11 +161,15 @@ class adaILN(nn.Module):
         self.rho.data.fill_(0.9)
 
     def forward(self, input, gamma, beta):
-        in_mean, in_var = torch.mean(torch.mean(input, dim=2, keepdim=True), dim=3, keepdim=True), torch.var(torch.var(input, dim=2, keepdim=True), dim=3, keepdim=True)
+        in_mean = torch.mean(torch.mean(input, dim=2, keepdim=True), dim=3, keepdim=True)
+        in_var = torch.var(torch.var(input, dim=2, keepdim=True), dim=3, keepdim=True)
         out_in = (input - in_mean) / torch.sqrt(in_var + self.eps)
-        ln_mean, ln_var = torch.mean(torch.mean(torch.mean(input, dim=1, keepdim=True), dim=2, keepdim=True), dim=3, keepdim=True), torch.var(torch.var(torch.var(input, dim=1, keepdim=True), dim=2, keepdim=True), dim=3, keepdim=True)
+        ln_mean = torch.mean(torch.mean(torch.mean(input, dim=1, keepdim=True), dim=2, keepdim=True),
+                             dim=3, keepdim=True),
+        ln_var = torch.var(torch.var(torch.var(input, dim=1, keepdim=True), dim=2, keepdim=True), dim=3, keepdim=True)
         out_ln = (input - ln_mean) / torch.sqrt(ln_var + self.eps)
-        out = self.rho.expand(input.shape[0], -1, -1, -1) * out_in + (1-self.rho.expand(input.shape[0], -1, -1, -1)) * out_ln
+        out = self.rho.expand(input.shape[0], -1, -1, -1) * out_in \
+            + (1-self.rho.expand(input.shape[0], -1, -1, -1)) * out_ln
         out = out * gamma.unsqueeze(2).unsqueeze(3) + beta.unsqueeze(2).unsqueeze(3)
 
         return out
@@ -184,11 +187,15 @@ class ILN(nn.Module):
         self.beta.data.fill_(0.0)
 
     def forward(self, input):
-        in_mean, in_var = torch.mean(torch.mean(input, dim=2, keepdim=True), dim=3, keepdim=True), torch.var(torch.var(input, dim=2, keepdim=True), dim=3, keepdim=True)
+        in_mean = torch.mean(torch.mean(input, dim=2, keepdim=True), dim=3, keepdim=True)
+        in_var = torch.var(torch.var(input, dim=2, keepdim=True), dim=3, keepdim=True)
         out_in = (input - in_mean) / torch.sqrt(in_var + self.eps)
-        ln_mean, ln_var = torch.mean(torch.mean(torch.mean(input, dim=1, keepdim=True), dim=2, keepdim=True), dim=3, keepdim=True), torch.var(torch.var(torch.var(input, dim=1, keepdim=True), dim=2, keepdim=True), dim=3, keepdim=True)
+        ln_mean = torch.mean(torch.mean(torch.mean(input, dim=1, keepdim=True), dim=2, keepdim=True),
+                             dim=3, keepdim=True)
+        ln_var = torch.var(torch.var(torch.var(input, dim=1, keepdim=True), dim=2, keepdim=True), dim=3, keepdim=True)
         out_ln = (input - ln_mean) / torch.sqrt(ln_var + self.eps)
-        out = self.rho.expand(input.shape[0], -1, -1, -1) * out_in + (1-self.rho.expand(input.shape[0], -1, -1, -1)) * out_ln
+        out = self.rho.expand(input.shape[0], -1, -1, -1) * out_in \
+            + (1-self.rho.expand(input.shape[0], -1, -1, -1)) * out_ln
         out = out * self.gamma.expand(input.shape[0], -1, -1, -1) + self.beta.expand(input.shape[0], -1, -1, -1)
 
         return out

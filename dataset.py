@@ -1,9 +1,8 @@
-import torch.utils.data as data
-
-from PIL import Image
-
 import os
 import os.path
+
+import torch.utils.data as data
+from PIL import Image
 
 
 def has_file_allowed_extension(filename, extensions):
